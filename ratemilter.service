@@ -1,0 +1,17 @@
+[Unit]
+Description=A milter service for rate-limiting outgoing emails
+After=network.target auditd.service
+
+[Service]
+User=postfix
+Group=postfix
+WorkingDirectory=/var/cache/filter
+ExecStart=/usr/bin/ratemilter \
+	--proto unix \
+	--cdb /etc/postfix/cdb/virtual-mailbox-maps.cdb \
+	--addr /var/spool/postfix/milters/bogo.sock
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
