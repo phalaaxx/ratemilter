@@ -125,9 +125,6 @@ func main() {
 	go RunServer(socket)
 	go CleanUpLoop()
 	// run http server
-	mux := http.NewServeMux()
-	mux.HandleFunc("/block", viewBlockMailbox)
-	mux.HandleFunc("/unblock", viewUnblockMailbox)
-	mux.HandleFunc("/", viewListMailboxes)
-	http.ListenAndServe(":1704", mux)
+	http.HandleFunc("/", viewApiHandler)
+	http.ListenAndServe(":1704", nil)
 }
