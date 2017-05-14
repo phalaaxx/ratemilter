@@ -81,7 +81,7 @@ func CleanUpLoop() {
 /* main program */
 func main() {
 	// parse commandline arguments
-	var protocol, address string
+	var protocol, address, HttpBind string
 	flag.StringVar(&protocol,
 		"proto",
 		"unix",
@@ -94,6 +94,10 @@ func main() {
 		"cdb",
 		"/etc/postfix/cdb/virtual-mailbox-maps.cdb",
 		"A cdb database containing list of all local mailboxes")
+	flag.StringVar(&HttpBind,
+		"http",
+		":1704",
+		"HTTP server bind address")
 	flag.Parse()
 	// make sure the specified protocol is either unix or tcp
 	if protocol != "unix" && protocol != "tcp" {
@@ -126,5 +130,5 @@ func main() {
 	go CleanUpLoop()
 	// run http server
 	http.HandleFunc("/", viewApiHandler)
-	http.ListenAndServe(":1704", nil)
+	http.ListenAndServe(HttpBind, nil)
 }
