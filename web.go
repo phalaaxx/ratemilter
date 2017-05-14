@@ -2,57 +2,46 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"text/template"
 )
 
-/* ListTemplate returns information about currently tracked mailboxes */
-const TemplateStats = `<html>
-<head>
-</head>
-<body>
-	<h3>List of mailboxes that have sent outgoing emails in the past 30 minutes</h3>
-	<hr>
-	<table>
-	<thead style="font-weight: bold">
-		<tr>
-			<td width=400px>Name</td>
-			<td>#</td>
-			<td>Blocked</td>
-			<td>Options</td>
-		</tr>
-	</thead>
-	<tbody>
-	{{ range $mb := . }}
-		{{if $mb.Blocked }}<tr style="background: red">{{ else }}<tr>{{ end }}
-			<td>{{ $mb.Name }}</td>
-			<td>{{ len $mb.SentLog }}</td>
-			<td>{{ $mb.Blocked }}</td>
-			<td>
-				{{ if $mb.Blocked }}
-				<a href="/unblock?mailbox={{$mb.Name}}"><strong>unblock</strong></a>
-				{{ else }}
-				<a href="/block?mailbox={{$mb.Name}}"><strong>block</strong></a>
-				{{ end }}
-			</td>
-		</tr>
-	{{ end }}
-	</tbody>
-	</table>
-</body>
-</html>`
+/* MailboxInfo is a statistics data structure */
+type MailboxInfo struct {
+	Name      string `json:"name"`
+	Blocked   bool   `json:"blocked"`
+	SentCount int    `json:"count"`
+}
+
+/* MailboxStats contains information about milter status */
+type MailboxStats struct {
+	Mailboxes []MailboxInfo `json:"mailboxes"`
+	CacheSize uint64        `json:"cache"`
+}
 
 /* viewApiHandler handles API calls to the milter */
 func viewApiHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
+		var stats MailboxStats
 		// acquire lock
 		MailboxMap.Mutex.Lock()
 		defer MailboxMap.Mutex.Unlock()
 		// dump mailboxes in json format
-		Template := template.Must(template.New("stats").Parse(TemplateStats))
-		if err := Template.Lookup("stats").Execute(w, MailboxMap.Data); err != nil {
+		for _, mailbox := range MailboxMap.Data {
+			stats.Mailboxes = append(
+				stats.Mailboxes,
+				MailboxInfo{
+					Name:      mailbox.Name,
+					Blocked:   mailbox.Blocked,
+					SentCount: len(mailbox.SentLog),
+				},
+			)
+		}
+		// render json data
+		encoder := json.NewEncoder(w)
+		if err := encoder.Encode(&stats); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	case "POST":
