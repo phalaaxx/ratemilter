@@ -9,7 +9,7 @@ WorkingDirectory=/var/cache/filter
 ExecStart=/usr/bin/ratemilter \
 	--proto unix \
 	--cdb /etc/postfix/cdb/virtual-mailbox-maps.cdb \
-	--addr /var/spool/postfix/milters/bogo.sock
+	--addr /var/spool/postfix/milters/rate.sock
 KillMode=process
 Restart=on-failure
 
