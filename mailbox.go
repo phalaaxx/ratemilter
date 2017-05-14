@@ -13,6 +13,11 @@ type Mailbox struct {
 	SentLog []time.Time
 }
 
+/* Size returns approximate size of memory consumed by Mailbox object */
+func (m Mailbox) Size() uint64 {
+	return uint64(len(m.Name) + len(m.SentLog) * 24 + 1)
+}
+
 /* MailboxMemoryCache  */
 type MailboxMemoryCache struct {
 	Data  map[string]Mailbox
@@ -86,6 +91,14 @@ func (m *MailboxMemoryCache) CleanUp(Duration time.Duration) {
 		mailbox.SentLog = SentLog
 		m.Data[name] = mailbox
 	}
+}
+
+func (m *MailboxMemoryCache) Size() uint64 {
+	var size uint64
+	for _, mailbox := range m.Data {
+		size += mailbox.Size()
+	}
+	return size
 }
 
 func NewMailboxMemoryCache() *MailboxMemoryCache {

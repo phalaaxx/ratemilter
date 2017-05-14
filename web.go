@@ -39,6 +39,8 @@ func viewApiHandler(w http.ResponseWriter, r *http.Request) {
 				},
 			)
 		}
+		// get cache size
+		stats.CacheSize = MailboxMap.Size()
 		// render json data
 		encoder := json.NewEncoder(w)
 		if err := encoder.Encode(&stats); err != nil {
