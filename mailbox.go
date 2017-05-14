@@ -15,7 +15,7 @@ type Mailbox struct {
 
 /* Size returns approximate size of memory consumed by Mailbox object */
 func (m Mailbox) Size() uint64 {
-	return uint64(len(m.Name) + len(m.SentLog) * 24 + 1)
+	return uint64(len(m.Name) + len(m.SentLog)*24 + 1)
 }
 
 /* MailboxMemoryCache  */
