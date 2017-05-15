@@ -107,6 +107,7 @@ func (m *MailboxMemoryCache) CleanUp(Duration time.Duration) {
 	}
 }
 
+/* Size returns approximate size in bytes used in memory cache */
 func (m *MailboxMemoryCache) Size() uint64 {
 	var size uint64
 	for _, mailbox := range m.Data {
