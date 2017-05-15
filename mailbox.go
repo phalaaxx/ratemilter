@@ -4,6 +4,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 )
@@ -123,10 +124,16 @@ func (m *MailboxMemoryCache) MarshalJSON() ([]byte, error) {
 	if _, err := buffer.WriteString(fmt.Sprintf(`{"cache":%d,"mailboxes":[`, m.Size())); err != nil {
 		return nil, err
 	}
+	// get sorted list of mailbox names
+	var list []string
+	for _, mailbox := range m.Data {
+		list = append(list, mailbox.Name)
+	}
+	sort.Strings(list)
 	// walk mailboxes
 	first := true
-	for _, mailbox := range m.Data {
-		if b, err := mailbox.MarshalJSON(); err != nil {
+	for _, mailboxName := range list {
+		if b, err := m.Data[mailboxName].MarshalJSON(); err != nil {
 			return nil, err
 		} else {
 			// do not write delimiter for first item in the list
