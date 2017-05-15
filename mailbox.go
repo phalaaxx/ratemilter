@@ -2,6 +2,8 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -16,6 +18,18 @@ type Mailbox struct {
 /* Size returns approximate size of memory consumed by Mailbox object */
 func (m Mailbox) Size() uint64 {
 	return uint64(len(m.Name) + len(m.SentLog)*24 + 1)
+}
+
+/* MarshalJSON implements the json.Marshaller interface */
+func (m Mailbox) MarshalJSON() ([]byte, error) {
+	buffer := new(bytes.Buffer)
+	fmt.Fprintf(buffer,
+		`{"name":"%s","blocked":"%v","count":%d}`,
+		m.Name,
+		m.Blocked,
+		len(m.SentLog),
+	)
+	return buffer.Bytes(), nil
 }
 
 /* MailboxMemoryCache  */
@@ -99,6 +113,41 @@ func (m *MailboxMemoryCache) Size() uint64 {
 		size += mailbox.Size()
 	}
 	return size
+}
+
+/* MarshalJSON implements json.Marshaler interface */
+func (m *MailboxMemoryCache) MarshalJSON() ([]byte, error) {
+	buffer := new(bytes.Buffer)
+	// write opening bracket
+	if _, err := buffer.WriteString(fmt.Sprintf(`{"cache":%d,"mailboxes":[`, m.Size())); err != nil {
+		return nil, err
+	}
+	// walk mailboxes
+	first := true
+	for _, mailbox := range m.Data {
+		if b, err := mailbox.MarshalJSON(); err != nil {
+			return nil, err
+		} else {
+			// do not write delimiter for first item in the list
+			if first {
+				first = false
+			} else {
+				// write delimiter
+				if _, err := buffer.WriteRune(','); err != nil {
+					return nil, err
+				}
+			}
+			// write data
+			if _, err := buffer.Write(b); err != nil {
+				return nil, err
+			}
+		}
+	}
+	// write closing bracket
+	if _, err := buffer.WriteString("]}"); err != nil {
+		return nil, err
+	}
+	return buffer.Bytes(), nil
 }
 
 func NewMailboxMemoryCache() *MailboxMemoryCache {

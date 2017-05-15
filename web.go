@@ -7,43 +7,22 @@ import (
 	"net/http"
 )
 
-/* MailboxInfo is a statistics data structure */
-type MailboxInfo struct {
-	Name      string `json:"name"`
-	Blocked   bool   `json:"blocked"`
-	SentCount int    `json:"count"`
-}
-
 /* MailboxStats contains information about milter status */
 type MailboxStats struct {
-	Mailboxes []MailboxInfo `json:"mailboxes"`
-	CacheSize uint64        `json:"cache"`
+	Mailboxes []Mailbox `json:"mailboxes"`
+	CacheSize uint64    `json:"cache"`
 }
 
 /* viewApiHandler handles API calls to the milter */
 func viewApiHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		var stats MailboxStats
 		// acquire lock
 		MailboxMap.Mutex.Lock()
 		defer MailboxMap.Mutex.Unlock()
-		// dump mailboxes in json format
-		for _, mailbox := range MailboxMap.Data {
-			stats.Mailboxes = append(
-				stats.Mailboxes,
-				MailboxInfo{
-					Name:      mailbox.Name,
-					Blocked:   mailbox.Blocked,
-					SentCount: len(mailbox.SentLog),
-				},
-			)
-		}
-		// get cache size
-		stats.CacheSize = MailboxMap.Size()
 		// render json data
 		encoder := json.NewEncoder(w)
-		if err := encoder.Encode(&stats); err != nil {
+		if err := encoder.Encode(MailboxMap); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	case "POST":
