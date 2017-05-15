@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 /* MailboxStats contains information about milter status */
@@ -20,10 +21,26 @@ func viewApiHandler(w http.ResponseWriter, r *http.Request) {
 		// acquire lock
 		MailboxMap.Mutex.Lock()
 		defer MailboxMap.Mutex.Unlock()
-		// render json data
-		encoder := json.NewEncoder(w)
-		if err := encoder.Encode(MailboxMap); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		// if monitor parameter is provided only render list of blocked mailboxes
+		switch r.URL.Query().Get("monitor") {
+		case "true":
+			// compile list of mailbox names
+			var list []string
+			for _, mailbox := range MailboxMap.GetBlocked() {
+				list = append(list, mailbox.Name)
+			}
+			// return OK if list is empty
+			if len(list) == 0 {
+				fmt.Fprintf(w, "OK")
+			} else {
+				fmt.Fprintf(w, "blocked:%s", strings.Join(list, ","))
+			}
+		default:
+			// render json data
+			encoder := json.NewEncoder(w)
+			if err := encoder.Encode(MailboxMap); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
 		}
 	case "POST":
 		query := r.URL.Query()

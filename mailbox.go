@@ -150,6 +150,17 @@ func (m *MailboxMemoryCache) MarshalJSON() ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
+/* GetBlocked returs list of blocked mailboxes */
+func (m *MailboxMemoryCache) GetBlocked() ([]Mailbox) {
+	var result []Mailbox
+	for _, mailbox := range m.Data {
+		if mailbox.Blocked {
+			result = append(result, mailbox)
+		}
+	}
+	return result
+}
+
 func NewMailboxMemoryCache() *MailboxMemoryCache {
 	return &MailboxMemoryCache{Data: make(map[string]Mailbox)}
 }
