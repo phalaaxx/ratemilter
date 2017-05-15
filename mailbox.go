@@ -24,7 +24,7 @@ func (m Mailbox) Size() uint64 {
 func (m Mailbox) MarshalJSON() ([]byte, error) {
 	buffer := new(bytes.Buffer)
 	fmt.Fprintf(buffer,
-		`{"name":"%s","blocked":"%v","count":%d}`,
+		`{"name":"%s","blocked":%v,"count":%d}`,
 		m.Name,
 		m.Blocked,
 		len(m.SentLog),
