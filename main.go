@@ -1,4 +1,4 @@
-/* bogomilter is a milter service for postfix */
+/* ratemilter is a milter service for postfix */
 package main
 
 import (
@@ -20,26 +20,26 @@ var LocalCdb string
 /* MailboxMap is an in-memory mailbox cache */
 var MailboxMap *MailboxMemoryCache
 
-/* BogoMilter object */
-type BogoMilter struct {
+/* RateMilter object */
+type RateMilter struct {
 	milter.Milter
 	from string
 }
 
 /* MailFrom is called on envelope from address */
-func (b *BogoMilter) MailFrom(from string, m *milter.Modifier) (milter.Response, error) {
+func (b *RateMilter) MailFrom(from string, m *milter.Modifier) (milter.Response, error) {
 	// save from address
 	b.from = from
 	return milter.RespContinue, nil
 }
 
 /* Header handles processing individual headers */
-func (b *BogoMilter) Header(header, value string, m *milter.Modifier) (milter.Response, error) {
+func (b *RateMilter) Header(header, value string, m *milter.Modifier) (milter.Response, error) {
 	return milter.RespContinue, nil
 }
 
 /* Headers handles end of headers milter callback */
-func (b *BogoMilter) Headers(headers textproto.MIMEHeader, m *milter.Modifier) (milter.Response, error) {
+func (b *RateMilter) Headers(headers textproto.MIMEHeader, m *milter.Modifier) (milter.Response, error) {
 	// only process outgoing emails
 	QueueID := m.Macros["i"]
 	if VerifyLocal(b.from) {
@@ -51,7 +51,7 @@ func (b *BogoMilter) Headers(headers textproto.MIMEHeader, m *milter.Modifier) (
 	return milter.RespContinue, nil
 }
 
-func (b *BogoMilter) Body(m *milter.Modifier) (milter.Response, error) {
+func (b *RateMilter) Body(m *milter.Modifier) (milter.Response, error) {
 	return milter.RespContinue, nil
 }
 
@@ -71,11 +71,11 @@ func VerifyLocal(name string) bool {
 	return false
 }
 
-/* RunServer creates and runs new BogoMilter server */
+/* RunServer creates and runs new RateMilter server */
 func RunServer(socket net.Listener) {
 	// declare milter init function
 	init := func() (milter.Milter, uint32, uint32) {
-		return &BogoMilter{},
+		return &RateMilter{},
 			milter.OptQuarantine,
 			milter.OptNoConnect | milter.OptNoHelo | milter.OptNoRcptTo | milter.OptNoBody
 	}

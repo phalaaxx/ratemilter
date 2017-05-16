@@ -1,4 +1,4 @@
-/* bogomilter is a milter service for postfix */
+/* ratemilter is a milter service for postfix */
 package main
 
 import (
