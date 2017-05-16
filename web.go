@@ -48,10 +48,6 @@ func viewApiHandler(w http.ResponseWriter, r *http.Request) {
 		case "block":
 			// get mailbox name
 			mailboxName := r.URL.Query().Get("mailbox")
-			if !VerifyLocal(mailboxName) {
-				http.Error(w, "unknown mailbox", http.StatusNotFound)
-				return
-			}
 			// acquire lock
 			MailboxMap.Mutex.Lock()
 			defer MailboxMap.Mutex.Unlock()
@@ -68,10 +64,6 @@ func viewApiHandler(w http.ResponseWriter, r *http.Request) {
 		case "unblock":
 			// get mailbox name
 			mailboxName := r.URL.Query().Get("mailbox")
-			if !VerifyLocal(mailboxName) {
-				http.Error(w, "unknown mailbox", http.StatusNotFound)
-				return
-			}
 			// acquire lock
 			MailboxMap.Mutex.Lock()
 			defer MailboxMap.Mutex.Unlock()

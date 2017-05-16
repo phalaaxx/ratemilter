@@ -4,7 +4,6 @@ package main
 import (
 	"flag"
 	//"fmt"
-	"github.com/phalaaxx/cdb"
 	"github.com/phalaaxx/milter"
 	"log"
 	"net"
@@ -13,9 +12,6 @@ import (
 	"os"
 	"time"
 )
-
-/* global variables */
-var LocalCdb string
 
 /* MailboxMap is an in-memory mailbox cache */
 var MailboxMap *MailboxMemoryCache
@@ -28,6 +24,11 @@ type RateMilter struct {
 
 /* MailFrom is called on envelope from address */
 func (b *RateMilter) MailFrom(from string, m *milter.Modifier) (milter.Response, error) {
+	// look for authentication token
+	if _, ok := m.Macros["{auth_authen}"]; !ok {
+		// user is not authenticated, ignore
+		return milter.RespAccept, nil
+	}
 	// save from address
 	b.from = from
 	return milter.RespContinue, nil
@@ -42,33 +43,15 @@ func (b *RateMilter) Header(header, value string, m *milter.Modifier) (milter.Re
 func (b *RateMilter) Headers(headers textproto.MIMEHeader, m *milter.Modifier) (milter.Response, error) {
 	// only process outgoing emails
 	QueueID := m.Macros["i"]
-	if VerifyLocal(b.from) {
-		if MailboxMap.IsBlocked(b.from, QueueID, 200, time.Minute*30) {
-			// blocked mailbox, quarantine
-			m.Quarantine("rate limit")
-		}
+	if MailboxMap.IsBlocked(b.from, QueueID, 200, time.Minute*30) {
+		// blocked mailbox, quarantine
+		m.Quarantine("rate limit")
 	}
 	return milter.RespContinue, nil
 }
 
 func (b *RateMilter) Body(m *milter.Modifier) (milter.Response, error) {
 	return milter.RespContinue, nil
-}
-
-/* VerifyLocal checks if local database contains named mailbox address */
-func VerifyLocal(name string) bool {
-	var value *string
-	err := cdb.Lookup(
-		LocalCdb,
-		func(db *cdb.Reader) (err error) {
-			value, err = db.Get(name)
-			return err
-		},
-	)
-	if err == nil && value != nil && len(*value) != 0 {
-		return true
-	}
-	return false
 }
 
 /* RunServer creates and runs new RateMilter server */
@@ -105,10 +88,6 @@ func main() {
 		"addr",
 		"/var/spool/postfix/milter/rate.sock",
 		"Bind to address or unix domain socket")
-	flag.StringVar(&LocalCdb,
-		"cdb",
-		"/etc/postfix/cdb/virtual-mailbox-maps.cdb",
-		"A cdb database containing list of all local mailboxes")
 	flag.StringVar(&HttpBind,
 		"http",
 		":1704",
