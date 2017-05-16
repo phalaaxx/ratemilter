@@ -9,16 +9,31 @@ import (
 	"time"
 )
 
+/* Message contains a mailbox message information */
+type Message struct {
+	QueueTime time.Time
+	QueueID   string
+}
+
+/* Size returns approximate in-memory size of Message data */
+func (m Message) Size() uint64 {
+	return uint64(len(m.QueueID) + 24)
+}
+
 /* Mailbox object to keep outgoing rate */
 type Mailbox struct {
-	Name    string
-	Blocked bool
-	SentLog []time.Time
+	Name     string
+	Blocked  bool
+	Messages []Message
 }
 
 /* Size returns approximate size of memory consumed by Mailbox object */
 func (m Mailbox) Size() uint64 {
-	return uint64(len(m.Name) + len(m.SentLog)*24 + 1)
+	size := uint64(len(m.Name) + 1)
+	for _, sent := range m.Messages {
+		size += sent.Size()
+	}
+	return size
 }
 
 /* MarshalJSON implements the json.Marshaller interface */
@@ -28,7 +43,7 @@ func (m Mailbox) MarshalJSON() ([]byte, error) {
 		`{"name":"%s","blocked":%v,"count":%d}`,
 		m.Name,
 		m.Blocked,
-		len(m.SentLog),
+		len(m.Messages),
 	)
 	return buffer.Bytes(), nil
 }
@@ -40,7 +55,7 @@ type MailboxMemoryCache struct {
 }
 
 /* IsBlocked returns true if mailbox is blocked from sending emails */
-func (m *MailboxMemoryCache) IsBlocked(name string, RateLimit int, Duration time.Duration) bool {
+func (m *MailboxMemoryCache) IsBlocked(name, QueueID string, RateLimit int, Duration time.Duration) bool {
 	// acquire mutex lock
 	m.Mutex.Lock()
 	defer m.Mutex.Unlock()
@@ -59,19 +74,20 @@ func (m *MailboxMemoryCache) IsBlocked(name string, RateLimit int, Duration time
 	}
 	// clean up sent log
 	threshold := time.Now().Add(-Duration)
-	var SentLog []time.Time
-	for _, ts := range mailbox.SentLog {
-		if threshold.Before(ts) {
-			SentLog = append(SentLog, ts)
+	var Messages []Message
+	for _, message := range mailbox.Messages {
+		if threshold.Before(message.QueueTime) {
+			Messages = append(Messages, message)
 		}
 	}
-	// add current timestamp and replace SentLog
-	SentLog = append(SentLog, time.Now())
-	mailbox.SentLog = SentLog
+	// add current timestamp and replace Messages
+	Messages = append(Messages, Message{time.Now(), QueueID})
+	mailbox.Messages = Messages
 	// check if RateLimit is exceeded
-	if len(mailbox.SentLog) >= RateLimit {
+	if len(mailbox.Messages) >= RateLimit {
 		mailbox.Blocked = true
 		// TODO: sent notification to administrator
+		// TODO: hold old messages that are still in the queue
 		// run in a goroutine to avoid excessive lock
 	}
 	m.Data[name] = mailbox
@@ -91,19 +107,19 @@ func (m *MailboxMemoryCache) CleanUp(Duration time.Duration) {
 			continue
 		}
 		// clean up expired records
-		var SentLog []time.Time
-		for _, ts := range mailbox.SentLog {
-			if threshold.Before(ts) {
-				SentLog = append(SentLog, ts)
+		var Messages []Message
+		for _, message := range mailbox.Messages {
+			if threshold.Before(message.QueueTime) {
+				Messages = append(Messages, message)
 			}
 		}
 		// remove cache for expired records
-		if len(SentLog) == 0 {
+		if len(Messages) == 0 {
 			delete(m.Data, name)
 			continue
 		}
 		// set new log
-		mailbox.SentLog = SentLog
+		mailbox.Messages = Messages
 		m.Data[name] = mailbox
 	}
 }

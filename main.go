@@ -8,6 +8,7 @@ import (
 	"github.com/phalaaxx/milter"
 	"log"
 	"net"
+	"net/textproto"
 	"net/http"
 	"os"
 	"time"
@@ -22,13 +23,27 @@ var MailboxMap *MailboxMemoryCache
 /* BogoMilter object */
 type BogoMilter struct {
 	milter.Milter
+	from string
 }
 
 /* MailFrom is called on envelope from address */
 func (b *BogoMilter) MailFrom(from string, m *milter.Modifier) (milter.Response, error) {
+	// save from address
+	b.from = from
+	return milter.RespContinue, nil
+}
+
+/* Header handles processing individual headers */
+func (b *BogoMilter) Header(header, value string, m *milter.Modifier) (milter.Response, error) {
+	return milter.RespContinue, nil
+}
+
+/* Headers handles end of headers milter callback */
+func (b *BogoMilter) Headers(headers textproto.MIMEHeader, m *milter.Modifier) (milter.Response, error) {
 	// only process outgoing emails
-	if VerifyLocal(from) {
-		if MailboxMap.IsBlocked(from, 200, time.Minute*30) {
+	QueueID := m.Macros["i"]
+	if VerifyLocal(b.from) {
+		if MailboxMap.IsBlocked(b.from, QueueID, 200, time.Minute*30) {
 			// blocked mailbox, quarantine
 			m.Quarantine("rate limit")
 		}
@@ -62,7 +77,7 @@ func RunServer(socket net.Listener) {
 	init := func() (milter.Milter, uint32, uint32) {
 		return &BogoMilter{},
 			milter.OptQuarantine,
-			milter.OptNoConnect | milter.OptNoHelo | milter.OptNoRcptTo | milter.OptNoBody | milter.OptNoHeaders | milter.OptNoEOH
+			milter.OptNoConnect | milter.OptNoHelo | milter.OptNoRcptTo | milter.OptNoBody
 	}
 	// start server
 	if err := milter.RunServer(socket, init); err != nil {
