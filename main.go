@@ -33,6 +33,10 @@ func (b *RateMilter) Connect(_, _ string, _ uint16, addr net.IP, m *milter.Modif
 
 /* MailFrom is called on envelope from address */
 func (b *RateMilter) MailFrom(from string, m *milter.Modifier) (milter.Response, error) {
+	// ignore messages with empty envelope from
+	if len(from) == 0 {
+		return milter.RespAccept, nil
+	}
 	// look for authentication token
 	if _, ok := m.Macros["{auth_authen}"]; !ok {
 		// make sure mailbox is not local
