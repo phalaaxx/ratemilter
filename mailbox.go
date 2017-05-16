@@ -86,9 +86,14 @@ func (m *MailboxMemoryCache) IsBlocked(name, QueueID string, RateLimit int, Dura
 	// check if RateLimit is exceeded
 	if len(mailbox.Messages) >= RateLimit {
 		mailbox.Blocked = true
+		// get list of tracked QueueIDs for current mailbox
+		var QueueIDs []string
+		for _, message := range mailbox.Messages {
+			QueueIDs = append(QueueIDs, message.QueueID)
+		}
+		// hold old messages that are still in the queue
+		go HoldQueueMessages(QueueIDs)
 		// TODO: sent notification to administrator
-		// TODO: hold old messages that are still in the queue
-		// run in a goroutine to avoid excessive lock
 	}
 	m.Data[name] = mailbox
 	return mailbox.Blocked
