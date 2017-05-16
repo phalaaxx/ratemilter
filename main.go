@@ -7,8 +7,8 @@ import (
 	"github.com/phalaaxx/milter"
 	"log"
 	"net"
-	"net/textproto"
 	"net/http"
+	"net/textproto"
 	"os"
 	"time"
 )
