@@ -113,6 +113,26 @@ func SigintHandler(c chan os.Signal, sock net.Listener) {
 	}
 }
 
+/* LoadMemoryCache attempts to load and deserialize
+   MemoryCache data from a persistent storage */
+func LoadMemoryCache(name string, MailboxMap *MailboxMemoryCache) error {
+	// open persistent file
+	File, err := os.Open(name)
+	if err != nil {
+		return err
+	}
+	defer File.Close()
+	// lock memory
+	MailboxMap.Mutex.Lock()
+	defer MailboxMap.Mutex.Unlock()
+	// deserialize data
+	decoder := json.NewDecoder(File)
+	if err := decoder.Decode(MailboxMap); err != nil {
+		return err
+	}
+	return nil
+}
+
 /* main program */
 func main() {
 	// parse commandline arguments
@@ -160,6 +180,10 @@ func main() {
 	}
 	// prepare memory cache
 	MailboxMap = NewMailboxMemoryCache()
+	// load data from persistent storage
+	if err := LoadMemoryCache("/tmp/ratemilter.json", MailboxMap); err != nil {
+		fmt.Printf("LoadMemoryCache(): %v\n", err)
+	}
 	// run server
 	go RunServer(socket)
 	go CleanUpLoop()
