@@ -36,18 +36,6 @@ func (m Mailbox) Size() uint64 {
 	return size
 }
 
-/* MarshalJSON implements the json.Marshaller interface */
-func (m Mailbox) MarshalJSON() ([]byte, error) {
-	buffer := new(bytes.Buffer)
-	fmt.Fprintf(buffer,
-		`{"name":"%s","blocked":%v,"count":%d}`,
-		m.Name,
-		m.Blocked,
-		len(m.Messages),
-	)
-	return buffer.Bytes(), nil
-}
-
 /* MailboxMemoryCache  */
 type MailboxMemoryCache struct {
 	Data  map[string]Mailbox
@@ -154,22 +142,24 @@ func (m *MailboxMemoryCache) MarshalJSON() ([]byte, error) {
 	// walk mailboxes
 	first := true
 	for _, mailboxName := range list {
-		if b, err := m.Data[mailboxName].MarshalJSON(); err != nil {
-			return nil, err
+		// write comma as record separator
+		if first {
+			first = false
 		} else {
-			// do not write delimiter for first item in the list
-			if first {
-				first = false
-			} else {
-				// write delimiter
-				if _, err := buffer.WriteRune(','); err != nil {
-					return nil, err
-				}
-			}
-			// write data
-			if _, err := buffer.Write(b); err != nil {
+			if _, err := buffer.WriteRune(','); err != nil {
 				return nil, err
 			}
+		}
+		// dump mailbox data
+		mailbox := m.Data[mailboxName]
+		_, err :=  fmt.Fprintf(buffer,
+			`{"name":"%s","blocked":%v,"count":%d}`,
+			mailbox.Name,
+			mailbox.Blocked,
+			len(mailbox.Messages),
+		)
+		if err != nil {
+			return nil, err
 		}
 	}
 	// write closing bracket
