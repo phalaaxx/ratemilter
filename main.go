@@ -151,7 +151,7 @@ func main() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 	SigintHandler := func(c chan os.Signal, sock net.Listener) {
-		for  range c {
+		for range c {
 			sock.Close()
 		}
 	}

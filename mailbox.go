@@ -11,7 +11,7 @@ import (
 
 /* Message contains a mailbox message information */
 type Message struct {
-	QueueTime time.Time	`json:"time"`
+	QueueTime time.Time `json:"time"`
 	QueueID   string    `json:"queueid"`
 }
 
@@ -152,7 +152,7 @@ func (m *MailboxMemoryCache) MarshalJSON() ([]byte, error) {
 		}
 		// dump mailbox data
 		mailbox := m.Data[mailboxName]
-		_, err :=  fmt.Fprintf(buffer,
+		_, err := fmt.Fprintf(buffer,
 			`{"name":"%s","blocked":%v,"count":%d}`,
 			mailbox.Name,
 			mailbox.Blocked,
