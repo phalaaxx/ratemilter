@@ -2,8 +2,9 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
-	//"fmt"
+	"fmt"
 	"github.com/phalaaxx/milter"
 	"log"
 	"net"
@@ -92,6 +93,26 @@ func CleanUpLoop() {
 	}
 }
 
+/* SigintHandler handles an INT signal sent to ratemilter */
+func SigintHandler(c chan os.Signal, sock net.Listener) {
+	for range c {
+		// dump data to persistent storage
+		if File, err := os.Create("/tmp/ratemilter.json"); err == nil {
+			defer File.Close()
+			encoder := json.NewEncoder(File)
+			// lock MailboxMap memory
+			MailboxMap.Mutex.Lock()
+			defer MailboxMap.Mutex.Unlock()
+			// dump data
+			if err := encoder.Encode(MailboxMap); err != nil {
+				fmt.Printf("Encode(): %v\n", err)
+			}
+		}
+		// gracefully stop the web server
+		sock.Close()
+	}
+}
+
 /* main program */
 func main() {
 	// parse commandline arguments
@@ -150,11 +171,6 @@ func main() {
 	// catch sigint
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-	SigintHandler := func(c chan os.Signal, sock net.Listener) {
-		for range c {
-			sock.Close()
-		}
-	}
 	go SigintHandler(c, sock)
 	// run http server
 	http.HandleFunc("/", viewApiHandler)
