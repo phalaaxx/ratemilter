@@ -141,7 +141,12 @@ func main() {
 	// run server
 	go RunServer(socket)
 	go CleanUpLoop()
+	// start listener socket
+	sock, err := net.Listen("tcp", HttpBind)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// run http server
 	http.HandleFunc("/", viewApiHandler)
-	http.ListenAndServe(HttpBind, nil)
+	http.Serve(sock, nil)
 }
