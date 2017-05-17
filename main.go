@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/phalaaxx/milter"
@@ -95,42 +94,14 @@ func CleanUpLoop() {
 
 /* SigintHandler handles an INT signal sent to ratemilter */
 func SigintHandler(c chan os.Signal, sock net.Listener) {
-	for range c {
-		// dump data to persistent storage
-		if File, err := os.Create("/tmp/ratemilter.json"); err == nil {
-			defer File.Close()
-			encoder := json.NewEncoder(File)
-			// lock MailboxMap memory
-			MailboxMap.Mutex.Lock()
-			defer MailboxMap.Mutex.Unlock()
-			// dump data
-			if err := encoder.Encode(MailboxMap); err != nil {
-				fmt.Printf("Encode(): %v\n", err)
-			}
-		}
-		// gracefully stop the web server
-		sock.Close()
+	// wait for sigint
+	<-c
+	// save data to persistent storage
+	if err := SaveMemoryCache(MailboxMap); err != nil {
+		fmt.Println("SaveMemoryMap(): %v\n", err)
 	}
-}
-
-/* LoadMemoryCache attempts to load and deserialize
-   MemoryCache data from a persistent storage */
-func LoadMemoryCache(name string, MailboxMap *MailboxMemoryCache) error {
-	// open persistent file
-	File, err := os.Open(name)
-	if err != nil {
-		return err
-	}
-	defer File.Close()
-	// lock memory
-	MailboxMap.Mutex.Lock()
-	defer MailboxMap.Mutex.Unlock()
-	// deserialize data
-	decoder := json.NewDecoder(File)
-	if err := decoder.Decode(MailboxMap); err != nil {
-		return err
-	}
-	return nil
+	// gracefully stop the web server
+	sock.Close()
 }
 
 /* main program */
@@ -181,7 +152,7 @@ func main() {
 	// prepare memory cache
 	MailboxMap = NewMailboxMemoryCache()
 	// load data from persistent storage
-	if err := LoadMemoryCache("/tmp/ratemilter.json", MailboxMap); err != nil {
+	if err := LoadMemoryCache(MailboxMap); err != nil {
 		fmt.Printf("LoadMemoryCache(): %v\n", err)
 	}
 	// run server
