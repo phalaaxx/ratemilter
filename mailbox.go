@@ -126,8 +126,8 @@ func (m *MailboxMemoryCache) Size() uint64 {
 	return size
 }
 
-/* MarshalJSON implements json.Marshaler interface */
-func (m *MailboxMemoryCache) MarshalJSON() ([]byte, error) {
+/* RenderJson serializes cache data in json format */
+func (m *MailboxMemoryCache) RenderJson() ([]byte, error) {
 	buffer := new(bytes.Buffer)
 	// write opening bracket
 	if _, err := buffer.WriteString(fmt.Sprintf(`{"cache":%d,"mailboxes":[`, m.Size())); err != nil {

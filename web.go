@@ -2,7 +2,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -36,9 +35,14 @@ func viewApiHandler(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprintf(w, "blocked:%s", strings.Join(list, ","))
 			}
 		default:
-			// render json data
-			encoder := json.NewEncoder(w)
-			if err := encoder.Encode(MailboxMap); err != nil {
+			// get json data dump from mailboxes cache
+			data, err := MailboxMap.RenderJson()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			// send dumped data
+			if _, err := w.Write(data); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 		}
