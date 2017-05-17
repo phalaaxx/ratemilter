@@ -11,8 +11,8 @@ import (
 
 /* Message contains a mailbox message information */
 type Message struct {
-	QueueTime time.Time
-	QueueID   string
+	QueueTime time.Time	`json:"time"`
+	QueueID   string    `json:"queueid"`
 }
 
 /* Size returns approximate in-memory size of Message data */
@@ -22,9 +22,9 @@ func (m Message) Size() uint64 {
 
 /* Mailbox object to keep outgoing rate */
 type Mailbox struct {
-	Name     string
-	Blocked  bool
-	Messages []Message
+	Name     string    `json:"mailbox"`
+	Blocked  bool      `json:"blocked"`
+	Messages []Message `json:"messages"`
 }
 
 /* Size returns approximate size of memory consumed by Mailbox object */
