@@ -73,7 +73,7 @@ func (b *RateMilter) Body(m *milter.Modifier) (milter.Response, error) {
 /* RunServer creates and runs new RateMilter server */
 func RunServer(socket net.Listener) {
 	// declare milter init function
-	init := func() (milter.Milter, uint32, uint32) {
+	init := func() (milter.Milter, milter.OptAction, milter.OptProtocol) {
 		return &RateMilter{},
 			milter.OptQuarantine,
 			milter.OptNoHelo | milter.OptNoRcptTo | milter.OptNoBody
