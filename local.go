@@ -1,15 +1,15 @@
 package main
 
 import (
-	"github.com/phalaaxx/cdb"
+	"github.com/phalaaxx/godb"
 )
 
 /* VerifyLocal checks if named mailbox exist in a local cdb database */
 func VerifyLocal(name string) bool {
 	var value *string
-	err := cdb.Lookup(
+	err := godb.CdbLookup(
 		LocalCdb,
-		func(db *cdb.Reader) (err error) {
+		func(db *godb.CdbReader) (err error) {
 			value, err = db.Get(name)
 			return err
 		},
