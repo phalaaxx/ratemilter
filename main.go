@@ -11,6 +11,7 @@ import (
 	"net/textproto"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -92,13 +93,13 @@ func CleanUpLoop() {
 	}
 }
 
-/* SigintHandler handles an INT signal sent to ratemilter */
+/* SigintHandler handles an INT or TERM signal sent to ratemilter */
 func SigintHandler(c chan os.Signal, sock net.Listener) {
-	// wait for sigint
+	// wait for sigint/sigterm (systemctl stop sends SIGTERM, not SIGINT)
 	<-c
 	// save data to persistent storage
 	if err := SaveMemoryCache(MailboxMap); err != nil {
-		fmt.Println("SaveMemoryMap(): %v\n", err)
+		fmt.Printf("SaveMemoryCache(): %v\n", err)
 	}
 	// gracefully stop the web server
 	sock.Close()
@@ -114,7 +115,7 @@ func main() {
 		"Protocol family (unix or tcp)")
 	flag.StringVar(&address,
 		"addr",
-		"/var/spool/postfix/milter/rate.sock",
+		"/var/spool/postfix/milters/rate.sock",
 		"Bind to address or unix domain socket")
 	flag.StringVar(&LocalCdb,
 		"cdb",
@@ -165,7 +166,7 @@ func main() {
 	}
 	// catch sigint
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go SigintHandler(c, sock)
 	// run http server
 	http.HandleFunc("/", viewApiHandler)

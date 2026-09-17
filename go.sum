@@ -1,0 +1,4 @@
+github.com/phalaaxx/cdb v0.0.0-20180220071457-18f09eda3c51 h1:qY3XaMV794Dfs0zD8PD48+HhIqivGB3p3vCv1wPJXDA=
+github.com/phalaaxx/cdb v0.0.0-20180220071457-18f09eda3c51/go.mod h1:uJe8KV3Via1b9giKu5kVmYa9Rf81hyfnje3qX4mxtI4=
+github.com/phalaaxx/milter v0.0.0-20240815211724-8304fd4788c2 h1:fqrQwRxqHoIAeQsT2cbZ4qrFoGDx+dPeecwyL4U8yGM=
+github.com/phalaaxx/milter v0.0.0-20240815211724-8304fd4788c2/go.mod h1:pWcwmbMsL2gCwQLuBpNKKheVg0NqpXCbE3gD+20hFPU=

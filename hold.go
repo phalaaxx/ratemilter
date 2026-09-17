@@ -23,9 +23,9 @@ func HoldQueueMessages(QueueIDs []string) error {
 		fmt.Println("Start():", err)
 		return err
 	}
-	// write queue ids sequentially
+	// write queue ids sequentially, one per line as expected by "postsuper -h -"
 	for _, qid := range QueueIDs {
-		if _, err := fmt.Fprintf(stdin, qid); err != nil {
+		if _, err := fmt.Fprintf(stdin, "%s\n", qid); err != nil {
 			fmt.Println("Fprintf():", err)
 			return err
 		}

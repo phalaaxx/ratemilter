@@ -4,15 +4,23 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 )
 
 /* PersistentStorageFile is the name of a file to use
-   as a persistant storage between service restarts */
-const PersistentStorageFile = "/tmp/ratemilter.json"
+   as a persistant storage between service restarts.
+   Must not live under /tmp: systemd-tmpfiles periodically
+   cleans /tmp independently of service restarts, which would
+   silently discard rate-limit state. */
+const PersistentStorageFile = "/var/lib/ratemilter/ratemilter.json"
 
 /* SaveMemoryCache attempts to serialize and save contents
    of memory cache data structure to a persistent storage */
 func SaveMemoryCache(MailboxMap *MailboxMemoryCache) error {
+	// make sure the storage directory exists
+	if err := os.MkdirAll(filepath.Dir(PersistentStorageFile), 0750); err != nil {
+		return err
+	}
 	// create and open a new file
 	File, err := os.Create(PersistentStorageFile)
 	if err != nil {
