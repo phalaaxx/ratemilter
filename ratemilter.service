@@ -6,7 +6,7 @@ After=network.target auditd.service
 User=postfix
 Group=postfix
 WorkingDirectory=/var/cache/filter
-ExecStart=/usr/bin/ratemilter \
+ExecStart=/usr/local/bin/ratemilter \
 	--proto unix \
 	--addr /var/spool/postfix/milters/rate.sock
 KillMode=process
